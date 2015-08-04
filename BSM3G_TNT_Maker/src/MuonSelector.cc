@@ -37,17 +37,19 @@ void MuonSelector::Fill(const edm::Event& iEvent){
  /////
  int mucoun = 0; //Only muons in Acceptance 
  for(edm::View<pat::Muon>::const_iterator mu = muon_h->begin(); mu != muon_h->end(); mu++){
+  /////
+  //   BSM variables
+  /////
   //Acceptance 
   if(mu->pt()<_Muon_pt_min)         continue;
   if(fabs(mu->eta())>_Muon_eta_max) continue;  
   //Kinematics
   Muon_pt.push_back(mu->pt());
+  Muon_ptError.push_back(mu->pt());
   Muon_eta.push_back(mu->eta());
   Muon_phi.push_back(mu->phi());
   Muon_energy.push_back(mu->energy());
   Muon_p.push_back(mu->p());
-  //Charge
-  Muon_charge.push_back(mu->charge());
   //ID
   Muon_loose.push_back(mu->isLooseMuon());
   Muon_soft.push_back(mu->isSoftMuon(*firstGoodVertex));
@@ -60,7 +62,6 @@ void MuonSelector::Fill(const edm::Event& iEvent){
   Muon_isoSum.push_back((mu->trackIso() + mu->ecalIso() + mu->hcalIso()));
   Muon_isoCharParPt.push_back((mu->pfIsolationR04().sumChargedParticlePt));
   Muon_isoCharged.push_back((mu->pfIsolationR04().sumChargedHadronPt));
-  //Relative isolation
   double SumChargedHadronPt = mu->pfIsolationR04().sumChargedHadronPt;
   double SumNeutralEt       = mu->pfIsolationR04().sumNeutralHadronEt + mu->pfIsolationR04().sumPhotonEt;
   double SumPU              = 0.5*mu->pfIsolationR04().sumPUPt;
@@ -91,20 +92,53 @@ void MuonSelector::Fill(const edm::Event& iEvent){
    Muon_isoPhoton.push_back((mu->pfIsolationR04().sumPhotonEt));
    Muon_isoPU.push_back((mu->pfIsolationR04().sumPUPt));
   }
+  //Other prop
+  Muon_charge.push_back(mu->charge());
+  /////
+  //   HN variables
+  /////
+  //Kinematics
+  Muon_dB.push_back(mu->dB());
+  Muon_bestTrack_pT.push_back(mu->muonBestTrack()->pt());
+  Muon_pTerrorOVERbestTrackpT.push_back(mu->muonBestTrack()->ptError()/mu->muonBestTrack()->pt());
+  reco::TrackRef tunePBestTrack = mu->tunePMuonBestTrack();
+  Muon_tunePBestTrack_pt.push_back(tunePBestTrack->pt());
+  //ID
+  Muon_isTrackerMuon.push_back(mu->isTrackerMuon());
+  Muon_isMediumMuon.push_back(mu->isMediumMuon());
+  Muon_POGisGood.push_back(muon::isGoodMuon(*mu, muon::TMOneStationTight));
+  //Track related variables
+  Muon_chi2LocalPosition.push_back(mu->combinedQuality().chi2LocalPosition);
+  Muon_trkKink.push_back(mu->combinedQuality().trkKink);
+  Muon_segmentCompatibility.push_back(mu->segmentCompatibility());
+  if(mu->innerTrack().isNonnull()){
+   Muon_validFraction.push_back(mu->innerTrack()->validFraction());
+   Muon_pixelLayersWithMeasurement.push_back(mu->innerTrack()->hitPattern().pixelLayersWithMeasurement());
+   Muon_qualityhighPurity.push_back(mu->innerTrack()->quality(reco::TrackBase::highPurity));
+  }else{
+   Muon_validFraction.push_back(-9999);
+   Muon_pixelLayersWithMeasurement.push_back(-9999);
+   Muon_qualityhighPurity.push_back(-9999);
+  }
+  //Other prop
+  reco::Muon::MuonTrackType tunePBestTrackType = mu->tunePMuonBestTrackType();
+  Muon_tunePBestTrackType.push_back(tunePBestTrackType); 
   //Counter
   mucoun++;
  }
 }
 void MuonSelector::SetBranches(){
  if(debug_)    std::cout<<"setting branches: calling AddBranch of baseTree"<<std::endl;
+ /////
+ //   BSM variables
+ /////
  //Kinematics
  AddBranch(&Muon_pt               ,"Muon_pt");
+ AddBranch(&Muon_ptError          ,"Muon_ptError");
  AddBranch(&Muon_eta              ,"Muon_eta");
  AddBranch(&Muon_phi              ,"Muon_phi");
  AddBranch(&Muon_energy           ,"Muon_energy");
  AddBranch(&Muon_p                ,"Muon_p");
- //Charge
- AddBranch(&Muon_charge           ,"Muon_charge");
  //ID
  AddBranch(&Muon_loose            ,"Muon_loose");
  AddBranch(&Muon_soft             ,"Muon_soft");
@@ -131,17 +165,42 @@ void MuonSelector::SetBranches(){
   AddBranch(&Muon_isoPhoton       ,"Muon_isoPhoton");
   AddBranch(&Muon_isoPU           ,"Muon_isoPU");
  }
+ //Other prop
+ AddBranch(&Muon_charge           ,"Muon_charge");
+ /////
+ //   HN variables
+ /////
+ //Kinematics
+ AddBranch(&Muon_dB               ,"Muon_dB");
+ AddBranch(&Muon_bestTrack_pT     ,"Muon_bestTrack_pT");
+ AddBranch(&Muon_pTerrorOVERbestTrackpT ,"Muon_pTerrorOVERbestTrackpT");
+ AddBranch(&Muon_tunePBestTrack_pt      ,"Muon_tunePBestTrack_pt");
+ //ID
+ AddBranch(&Muon_isTrackerMuon    ,"Muon_isTrackerMuon");
+ AddBranch(&Muon_isMediumMuon     ,"Muon_isMediumMuon");
+ AddBranch(&Muon_POGisGood        ,"Muon_POGisGood");
+ //Track related variables
+ AddBranch(&Muon_chi2LocalPosition          ,"Muon_chi2LocalPosition");
+ AddBranch(&Muon_trkKink                    ,"Muon_trkKink");
+ AddBranch(&Muon_segmentCompatibility       ,"Muon_segmentCompatibility");
+ AddBranch(&Muon_validFraction              ,"Muon_validFraction");
+ AddBranch(&Muon_pixelLayersWithMeasurement ,"Muon_pixelLayersWithMeasurement");
+ AddBranch(&Muon_qualityhighPurity          ,"Muon_qualityhighPurity"); 
+ //Other prop
+ AddBranch(&Muon_tunePBestTrackType         ,"Muon_tunePBestTrackType");
  if(debug_) std::cout<<"set branches"<<std::endl;
 }
 void MuonSelector::Clear(){
+ /////
+ //   BSM variables
+ /////
  //Kinematics  
  Muon_pt.clear();
+ Muon_ptError.clear();
  Muon_eta.clear();
  Muon_phi.clear();
  Muon_energy.clear();
  Muon_p.clear(); 
- //Charge
- Muon_charge.clear(); 
  //ID
  Muon_loose.clear();
  Muon_soft.clear();
@@ -166,6 +225,29 @@ void MuonSelector::Clear(){
  Muon_isoNeutralHadron.clear();
  Muon_isoPhoton.clear();
  Muon_isoPU.clear();
+ //Other prop
+ Muon_charge.clear(); 
+ /////
+ //   HN variables
+ /////
+ //Kinematics
+ Muon_dB.clear();
+ Muon_bestTrack_pT.clear();
+ Muon_pTerrorOVERbestTrackpT.clear();
+ Muon_tunePBestTrack_pt.clear();
+ //ID
+ Muon_isTrackerMuon.clear();
+ Muon_isMediumMuon.clear();
+ Muon_POGisGood.clear();
+ //Track related variables
+ Muon_chi2LocalPosition.clear();
+ Muon_trkKink.clear();
+ Muon_segmentCompatibility.clear();
+ Muon_validFraction.clear();
+ Muon_pixelLayersWithMeasurement.clear();
+ Muon_qualityhighPurity.clear();
+ //Other prop
+ Muon_tunePBestTrackType.clear();
 }
 bool MuonSelector::isGoodVertex(const reco::Vertex& vtx){
  if(vtx.isFake())                                        return false;

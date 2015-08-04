@@ -72,15 +72,22 @@ class MuonSelector : public  baseTree{
   int    _Muon_vtx_ndof_min;
   int    _Muon_vtx_rho_max;
   double _Muon_vtx_position_z_max;
+  bool   _super_TNT; //super tiny ntuple?
   /////
   //   BSM methods/variables
   /////
-  bool _super_TNT; //super tiny ntuple?
-  vector <double> Muon_isoSum,Muon_isoCharParPt;
-  vector <double> Muon_pt,Muon_eta,Muon_phi,Muon_dz,Muon_energy,Muon_iso,Muon_relIso;
-  vector <double> Muon_isoCharged,Muon_isoNeutralHadron,Muon_isoPhoton,Muon_isoPU;
-  vector <double> Muon_charge,Muon_chi2,Muon_p,Muon_matchedStat,Muon_dxy,Muon_validHits,Muon_validHitsInner,Muon_TLayers; 
-  vector <int>    Muon_loose,Muon_tight,Muon_soft,Muon_isHighPt,Muon_pf,Muon_isglobal;   
-  vector <int>    Muon_pdgId;
+  vector<double> Muon_isoSum,Muon_isoCharParPt;
+  vector<double> Muon_pt,Muon_ptError,Muon_eta,Muon_phi,Muon_dz,Muon_energy,Muon_iso,Muon_relIso;
+  vector<double> Muon_isoCharged,Muon_isoNeutralHadron,Muon_isoPhoton,Muon_isoPU;
+  vector<double> Muon_charge,Muon_chi2,Muon_p,Muon_matchedStat,Muon_dxy,Muon_validHits,Muon_validHitsInner,Muon_TLayers; 
+  vector<int>    Muon_loose,Muon_tight,Muon_soft,Muon_isHighPt,Muon_pf,Muon_isglobal;   
+  vector<int>    Muon_pdgId;
+  /////
+  //   HN variables
+  /////
+  vector<double> Muon_dB, Muon_bestTrack_pT, Muon_pTerrorOVERbestTrackpT, Muon_tunePBestTrack_pt;
+  vector<double> Muon_isTrackerMuon, Muon_isMediumMuon, Muon_POGisGood;
+  vector<double> Muon_chi2LocalPosition, Muon_trkKink, Muon_segmentCompatibility, Muon_validFraction, Muon_pixelLayersWithMeasurement, Muon_qualityhighPurity;
+  vector<double> Muon_tunePBestTrackType;
 };
 #endif
