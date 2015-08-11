@@ -63,7 +63,7 @@ void BSM3G_TNT_Maker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
  if(_filleventinfo)         eventinfoselector->Fill(iEvent);
  if(_filltriggerinfo)       trselector->Fill(iEvent, iSetup);
  if(_fillPVinfo)            pvselector->Fill(iEvent); 
- if(_fillmuoninfo)          muselector->Fill(iEvent);
+ if(_fillmuoninfo)          muselector->Fill(iEvent,iSetup);
  if(_fillelectronpatinfo)   elpatselector->Fill(iEvent); 
  if(_filltauinfo)           tauselector->Fill(iEvent); 
  if(_filljetinfo)           jetselector->Fill(iEvent);

@@ -8,12 +8,13 @@ MuonSelector::MuonSelector(std::string name, TTree* tree, bool debug, const pset
  _Muon_vtx_rho_max        = iConfig.getParameter<int>("Muon_vtx_rho_max");
  _Muon_vtx_position_z_max = iConfig.getParameter<double>("Muon_vtx_position_z_max");
  _super_TNT               = iConfig.getParameter<bool>("super_TNT");
+ jetToken_                = iConfig.getParameter<edm::InputTag>("jets");
  SetBranches();
 }
 MuonSelector::~MuonSelector(){
  delete tree_;
 }
-void MuonSelector::Fill(const edm::Event& iEvent){
+void MuonSelector::Fill(const edm::Event& iEvent, const edm::EventSetup& iSetup){
  Clear();
  /////
  //   Recall collections
@@ -22,6 +23,9 @@ void MuonSelector::Fill(const edm::Event& iEvent){
  iEvent.getByLabel(_muonToken, muon_h);
  edm::Handle<reco::VertexCollection> vtx_h;
  iEvent.getByLabel(_vertexInputTag, vtx_h);
+ edm::Handle<double> rhoHandle;
+ iEvent.getByLabel("fixedGridRhoFastjetAll",rhoHandle);
+ double rho = *rhoHandle;
  /////
  //   Require a good vertex 
  ///// 
@@ -125,6 +129,51 @@ void MuonSelector::Fill(const edm::Event& iEvent){
   Muon_tunePBestTrackType.push_back(tunePBestTrackType); 
   //Counter
   mucoun++;
+  /////
+  //   TTH variables
+  ///// 
+  if(mu->innerTrack().isNonnull() && mu->globalTrack().isNonnull()){
+   //Kinematics
+   Muon_pTErrorSUpT.push_back(mu->innerTrack()->ptError()/mu->innerTrack()->pt());   
+   //ID
+   //Isolation
+   double iso_rho = get_iso_rho(*mu,rho);
+   Muon_iso_rho.push_back(iso_rho);
+   Muon_iso_nue_rel.push_back(iso_rho-mu->pfIsolationR03().sumChargedHadronPt/mu->pt());
+   Muon_iso_ch_rel.push_back(mu->pfIsolationR03().sumChargedHadronPt/mu->pt());
+   //Track related variables
+   Muon_dxy_it.push_back(fabs(mu->innerTrack()->dxy(firstGoodVertex->position())));
+   Muon_dz_it.push_back(fabs(mu->innerTrack()->dz(firstGoodVertex->position())));
+   Muon_ip3d_val.push_back(fabs(mu->dB(pat::Muon::PV3D)));
+   Muon_ip3d_err.push_back(mu->edB(pat::Muon::PV3D));
+   Muon_ip3d_sig.push_back(fabs(mu->dB(pat::Muon::PV3D)/mu->edB(pat::Muon::PV3D)));
+   Muon_nchi2_gt.push_back(mu->globalTrack()->normalizedChi2());
+   //Other prop
+   double mujet_mindr    = 999;
+   double mujet_pt       = -1;  
+   double muptSUmujetpt  = -1;
+   double mujet_btagdisc = -1;
+   get_mujet_info(*mu,iEvent,iSetup,mujet_mindr,mujet_pt,muptSUmujetpt,mujet_btagdisc);
+   Muon_mujet_mindr.push_back(mujet_mindr);
+   Muon_mujet_pt.push_back(mujet_pt);
+   Muon_muptSUmujetpt.push_back(muptSUmujetpt);
+   Muon_mujet_btagdisc.push_back(mujet_btagdisc);
+  }else{
+   Muon_pTErrorSUpT.push_back(-9999);
+   Muon_iso_rho.push_back(-9999);
+   Muon_iso_nue_rel.push_back(-9999);
+   Muon_iso_ch_rel.push_back(-9999);
+   Muon_dxy_it.push_back(-9999);
+   Muon_dz_it.push_back(-9999);
+   Muon_ip3d_val.push_back(-9999);
+   Muon_ip3d_err.push_back(-9999);
+   Muon_ip3d_sig.push_back(-9999);
+   Muon_nchi2_gt.push_back(-9999);
+   Muon_mujet_mindr.push_back(-9999);
+   Muon_mujet_pt.push_back(-9999);
+   Muon_muptSUmujetpt.push_back(-9999);
+   Muon_mujet_btagdisc.push_back(-9999);
+  }
  }
 }
 void MuonSelector::SetBranches(){
@@ -188,6 +237,28 @@ void MuonSelector::SetBranches(){
  AddBranch(&Muon_qualityhighPurity          ,"Muon_qualityhighPurity"); 
  //Other prop
  AddBranch(&Muon_tunePBestTrackType         ,"Muon_tunePBestTrackType");
+ /////
+ //   TTH variables
+ /////
+ //Kinematics
+ AddBranch(&Muon_pTErrorSUpT                ,"Muon_pTErrorSUpT");
+ //ID
+ //Isolation
+ AddBranch(&Muon_iso_rho                    ,"Muon_iso_rho");
+ AddBranch(&Muon_iso_nue_rel                ,"Muon_iso_nue_rel");
+ AddBranch(&Muon_iso_ch_rel                 ,"Muon_iso_ch_rel");
+ //Track related variables
+ AddBranch(&Muon_dxy_it                     ,"Muon_dxy_it");
+ AddBranch(&Muon_dz_it                      ,"Muon_dz_it");
+ AddBranch(&Muon_ip3d_val                   ,"Muon_ip3d_val");
+ AddBranch(&Muon_ip3d_err                   ,"Muon_ip3d_err");
+ AddBranch(&Muon_ip3d_sig                   ,"Muon_ip3d_sig");
+ AddBranch(&Muon_nchi2_gt                   ,"Muon_nchi2_gt");
+ //Other prop
+ AddBranch(&Muon_mujet_mindr                ,"Muon_mujet_mindr");
+ AddBranch(&Muon_mujet_pt                   ,"Muon_mujet_pt");
+ AddBranch(&Muon_muptSUmujetpt              ,"Muon_muptSUmujetpt");
+ AddBranch(&Muon_mujet_btagdisc             ,"Muon_mujet_btagdisc");
  if(debug_) std::cout<<"set branches"<<std::endl;
 }
 void MuonSelector::Clear(){
@@ -248,6 +319,28 @@ void MuonSelector::Clear(){
  Muon_qualityhighPurity.clear();
  //Other prop
  Muon_tunePBestTrackType.clear();
+ /////
+ //   TTH variables
+ /////
+ //Kinematics
+ Muon_pTErrorSUpT.clear();
+ //ID
+ //Isolation
+ Muon_iso_rho.clear();
+ Muon_iso_nue_rel.clear();
+ Muon_iso_ch_rel.clear();
+ //Track related variables
+ Muon_dxy_it.clear();
+ Muon_dz_it.clear();
+ Muon_ip3d_val.clear();
+ Muon_ip3d_err.clear();
+ Muon_ip3d_sig.clear();
+ Muon_nchi2_gt.clear();
+ //Other prop
+ Muon_mujet_mindr.clear();
+ Muon_mujet_pt.clear();
+ Muon_muptSUmujetpt.clear();
+ Muon_mujet_btagdisc.clear();
 }
 bool MuonSelector::isGoodVertex(const reco::Vertex& vtx){
  if(vtx.isFake())                                        return false;
@@ -255,4 +348,38 @@ bool MuonSelector::isGoodVertex(const reco::Vertex& vtx){
  if(vtx.position().Rho()>_Muon_vtx_rho_max)              return false;
  if(fabs(vtx.position().Z()) > _Muon_vtx_position_z_max) return false;
  return true;
+}
+double MuonSelector::get_iso_rho(const pat::Muon& mu, double& rho){
+ double Eta = mu.eta();
+ double pfIsoCharged = mu.pfIsolationR03().sumChargedHadronPt;
+ double pfIsoNeutral = mu.pfIsolationR03().sumNeutralHadronEt + mu.pfIsolationR03().sumPhotonEt;
+ double EffArea = 9999.;
+ if(abs(Eta) < 0.8)      EffArea = 0.0913;
+ else if(abs(Eta) < 1.3) EffArea = 0.0765;
+ else if(abs(Eta) < 2.0) EffArea = 0.0546;
+ else if(abs(Eta) < 2.2) EffArea = 0.0728;
+ else                    EffArea = 0.1177;
+ double correction = rho*EffArea;
+ double pfIsoPUSubtracted = std::max( 0.0, pfIsoNeutral - correction);
+ double iso = (pfIsoCharged + pfIsoPUSubtracted)/mu.pt();
+ return iso;
+}
+void MuonSelector::get_mujet_info(const pat::Muon& mu, const edm::Event& iEvent, const edm::EventSetup& iSetup, double& mujet_mindr, double& mujet_pt, double& muptSUmujetpt, double& mujet_btagdisc){
+ edm::Handle<pat::JetCollection> jets;
+ iEvent.getByLabel(jetToken_, jets);
+ pat::Jet mujet;
+ const JetCorrector* corrector = JetCorrector::getJetCorrector( "ak4PFchsL1L2L3", iSetup );
+ for(const pat::Jet &j : *jets){
+  pat::Jet jet = j.correctedJet(0);
+  double scale = corrector->correction(jet, iEvent, iSetup);
+  jet.scaleEnergy(scale);
+  double dr = deltaR(mu.p4(),jet.p4());
+  if(dr<mujet_mindr){
+   mujet_mindr = dr;
+   mujet       = jet;
+  }
+ }
+ mujet_pt        = mujet.pt(); 
+ muptSUmujetpt   = min(mu.pt()/mujet.pt(), 1.5);
+ mujet_btagdisc  = max(mujet.bDiscriminator("combinedInclusiveSecondaryVertexV2BJetTags"), float(0.0)); 
 }

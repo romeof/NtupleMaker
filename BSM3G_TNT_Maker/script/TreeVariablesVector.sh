@@ -1,19 +1,24 @@
 #!/bin/bash
 #Specify needed variables
 varType=double
-varList=(Muon_tunePBestTrackType)
+object=Muon_
+varList=(mujet_mindr mujet_pt muptSUmujetpt mujet_btagdisc)
+varLast=nchi2_gt
+varCount=p
 #Kinematics
-#Muon_ptError
-#Muon_dB Muon_bestTrack_pT Muon_pTerrorOVERbestTrackpT Muon_tunePBestTrack_pt
+#ptError
+#pTErrorSUpT
+#
+#dB bestTrack_pT pTerrorOVERbestTrackpT tunePBestTrack_pt
 #ID
-#Muon_isTrackerMuon Muon_isMediumMuon Muon_POGisGood
+#isTrackerMuon isMediumMuon POGisGood
 #Isolation
+#iso_rho iso_nue_rel iso_ch_rel
 #Track related variables
-#Muon_chi2LocalPosition Muon_trkKink Muon_segmentCompatibility Muon_validFraction Muon_pixelLayersWithMeasurement Muon_qualityhighPurity
+#chi2LocalPosition trkKink segmentCompatibility validFraction pixelLayersWithMeasurement qualityhighPurity
+#dxy_it dz_it ip3d_val ip3d_err ip3d_sig nchi2_gt
 #Other prop
 #tunePBestTrackType
-varLast=Muon_tunePBestTrackType
-varCount=p
 #Print info
 echo " "
 #Declare variables
@@ -23,9 +28,9 @@ for count in ${varList[@]};
 do
   if [ "${varList[$pos]}" != "$varLast" ] 
   then
-   echo -e "${varList[$pos]}, \c"
+   echo -e "$object${varList[$pos]}, \c"
   else
-   echo "${varList[$pos]};"
+   echo "$object${varList[$pos]};"
   fi
   let pos=pos+1
 done
@@ -35,7 +40,7 @@ echo " "
 pos=0
 for count in ${varList[@]}; 
 do
-  echo "  ${varList[$pos]}.push_back();"
+  echo "  $object${varList[$pos]}.push_back();"
   let pos=pos+1
 done
 echo " "
@@ -43,7 +48,7 @@ echo " "
 pos=0
 for count in ${varList[@]}; 
 do
-  echo " AddBranch(&${varList[$pos]}               ,\"${varList[$pos]}\");"
+  echo " AddBranch(&$object${varList[$pos]}               ,\"$object${varList[$pos]}\");"
   let pos=pos+1
 done
 echo " "
@@ -51,7 +56,7 @@ echo " "
 pos=0
 for count in ${varList[@]}; 
 do
-  echo " ${varList[$pos]}.clear();"
+  echo " $object${varList[$pos]}.clear();"
   let pos=pos+1
 done
 echo " "
